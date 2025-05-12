@@ -1,73 +1,59 @@
-# Welcome to your Lovable project
 
-## Project info
+# Leviosa AI - Document Processing
 
-**URL**: https://lovable.dev/projects/28ae4156-e702-461c-8ee7-8f1085b86810
+Leviosa AI is an intelligent document processing application that makes it easy to parse and extract data from documents.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- Parse Document: Upload and view PDF files with text extraction
+- Extract Data: (Coming soon) Extract structured data from documents
+- Dark/Light mode toggle
+- Responsive design
 
-**Use Lovable**
+## Tech Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/28ae4156-e702-461c-8ee7-8f1085b86810) and start prompting.
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- **Backend**: (Planned) FastAPI with CORS support for file uploads
 
-Changes made via Lovable will be committed automatically to this repo.
+## Development
 
-**Use your preferred IDE**
+### Frontend
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+```bash
+# Install dependencies
+pnpm install
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Start development server
+pnpm dev
 ```
 
-**Edit a file directly in GitHub**
+The frontend development server will run on http://localhost:5173
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Backend (Future Implementation)
 
-**Use GitHub Codespaces**
+```bash
+# Navigate to backend directory
+cd backend
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Start FastAPI server
+uvicorn app.main:app --reload
+```
 
-## What technologies are used for this project?
+The backend API will run on http://localhost:8000
 
-This project is built with:
+## Backend API (Planned)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- `POST /api/parse`: Upload a document for parsing
+  - Request: `FormData` with file
+  - Response: `{ url: string }` - URL of the uploaded file
 
-## How can I deploy this project?
+## Upcoming Features
 
-Simply open [Lovable](https://lovable.dev/projects/28ae4156-e702-461c-8ee7-8f1085b86810) and click on Share -> Publish.
+- OCR for text extraction from images
+- Table detection and structured data extraction
+- Bounding box visualization for detected elements
+- Export to various formats (JSON, CSV)
 
-## Can I connect a custom domain to my Lovable project?
+## License
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+MIT
