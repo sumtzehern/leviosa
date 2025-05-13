@@ -1,13 +1,17 @@
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI # type: ignore
+from fastapi.middleware.cors import CORSMiddleware # type: ignore
+from fastapi.staticfiles import StaticFiles # type: ignore
 import os
 
 from routes import upload, parse
 
 # Create uploads directory if it doesn't exist
 os.makedirs("uploads", exist_ok=True)
+
+# for api documentation
+# http://localhost:8000/redoc
+# http://localhost:8000/docs
 
 app = FastAPI(
     title="Leviosa AI API",
@@ -18,7 +22,7 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],  # Frontend Vite default port
+    allow_origins=["http://localhost:8080", "http://localhost:5173"],  # Frontend Vite default port
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

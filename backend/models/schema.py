@@ -8,15 +8,17 @@ class UploadResponse(BaseModel):
     path: str
 
 class OCRRequest(BaseModel):
-    """Request model for OCR processing using a file path"""
     path: str
 
 class OCRResult(BaseModel):
-    """Model for an individual OCR result"""
     text: str
-    bbox: List[float]  # [x1, y1, x2, y2]
+    bbox: List[float]  # e.g., [x1, y1, x2, y2]
     confidence: float
 
-class OCRResponse(BaseModel):
-    """Response model for OCR processing"""
+class OCRPageResult(BaseModel):
+    page: int
     results: List[OCRResult]
+
+class OCRResponse(BaseModel):
+    pages: List[OCRPageResult]
+

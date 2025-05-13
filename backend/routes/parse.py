@@ -4,6 +4,7 @@ from typing import Optional
 import os
 from services.ocr_easyocr import extract_text_and_boxes
 from models.schema import OCRResponse, OCRRequest
+from services.pdf_converter import convert_pdf_to_images
 
 router = APIRouter()
 
@@ -47,8 +48,23 @@ async def ocr_extract(
             )
         
         # Process the file from path
-        result = await extract_text_and_boxes(full_path)
-        return result
+        # convert pdf to images
+        if filename.endswith(".pdf"):
+            image_paths = convert_pdf_to_images(full_path)
+            result = []
+            for i, image_path in enumerate(image_paths):
+                ocr_result = await extract_text_and_boxes(image_paths)
+                result.append({
+                    "page": i + 1,
+                    "results": ocr_result.results, # assume results is a field in the OCRResponse
+                })
+                return {"pages": result}
+            else:
+                result = await extract_text_and_boxes(full_path)
+                return { "pages": [{ "page": 1, "results": result.results }] }
+        else:
+            result = await extract_text_and_boxes(full_path)
+            return { "pages": [{ "page": 1, "results": result.results }] }
     
     # Neither file nor path provided
     else:
