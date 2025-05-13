@@ -49,7 +49,7 @@ export function FileDropzone({ onFileUpload }: FileDropzoneProps) {
 
   const validateAndUploadFile = (file: File) => {
     const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
-    const maxSize = 1024 * 1024 * 1024; // 1GB
+    const maxSize = 20 * 1024 * 1024; // 20MB
     
     if (!allowedTypes.includes(file.type)) {
       toast({
@@ -63,7 +63,7 @@ export function FileDropzone({ onFileUpload }: FileDropzoneProps) {
     if (file.size > maxSize) {
       toast({
         title: "File too large",
-        description: "Please upload a file smaller than 1GB.",
+        description: "Please upload a file smaller than 20mb.",
         variant: "destructive",
       });
       return;
@@ -96,7 +96,7 @@ export function FileDropzone({ onFileUpload }: FileDropzoneProps) {
       
       <h3 className="text-lg font-medium mb-2">Choose files or drag and drop</h3>
       <p className="text-sm text-muted-foreground text-center">
-        PDF, Image, Office File (1GB)
+        PDF, Image, Office File (20MB)
       </p>
       <p className="text-xs text-muted-foreground mt-8 text-center">
         Click to go back, hold to see history
