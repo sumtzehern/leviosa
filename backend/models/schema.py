@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel
 from typing import List, Optional, Union, Dict, Any
 
@@ -28,3 +27,11 @@ class OCRPageResult(BaseModel):
 class OCRResponse(BaseModel):
     pages: List[OCRPageResult]
 
+class MarkdownRequest(BaseModel):
+    """Request model for markdown conversion"""
+    ocr_response: OCRResponse
+
+class MarkdownResponse(BaseModel):
+    """Response model for markdown conversion"""
+    markdown: str
+    raw_text: str
