@@ -1,96 +1,60 @@
-
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Body
-from typing import Optional
-import os
-from services.ocr_easyocr import extract_text_and_boxes
+import traceback
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from models.schema import OCRResponse, OCRRequest
+from services.ocr_easyocr import extract_text_and_boxes
 from services.pdf_converter import convert_pdf_to_images
+import os
 
 router = APIRouter()
 
-@router.post("/ocr", response_model=OCRResponse)
-async def ocr_extract(
-    file: Optional[UploadFile] = File(None),
-    request: Optional[OCRRequest] = None
-):
+
+# Upload File → OCR directly
+@router.post("/ocr/file", response_model=OCRResponse)
+async def ocr_from_upload(file: UploadFile = File(...)):
     """
-    Extract text and bounding boxes from an image using EasyOCR.
-    Accepts either:
-    - A directly uploaded file
-    - A JSON body with a path to a previously uploaded file
+    Upload and OCR a single image file.
+    Supports PNG, JPG, JPEG.
     """
-    # Handle file upload case
-    if file:
-        # Check file type
-        allowed_types = ["image/png", "image/jpeg", "image/jpg"]
-        content_type = file.content_type or ""
-        
-        if content_type not in allowed_types:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"File type not allowed for OCR. Must be one of: {', '.join(allowed_types)}"
-            )
-        
-        # Process the file directly
-        result = await extract_text_and_boxes(file)
-        return result
+    allowed_types = ["image/png", "image/jpeg", "image/jpg"]
+    content_type = file.content_type or ""
     
-    # Handle JSON request with path
-    elif request and request.path:
-        # Construct the full path to the file
-        filename = os.path.basename(request.path)
-        full_path = os.path.join("uploads", filename)
-        
-        if not os.path.exists(full_path):
-            raise HTTPException(
-                status_code=404,
-                detail=f"File not found: {filename}"
-            )
-        
-        # Process the file from path
-        # convert pdf to images
-        if filename.endswith(".pdf"):
-            image_paths = convert_pdf_to_images(full_path)
-            result = []
-            for i, image_path in enumerate(image_paths):
-                ocr_result = await extract_text_and_boxes(image_paths)
-                result.append({
-                    "page": i + 1,
-                    "results": ocr_result.results, # assume results is a field in the OCRResponse
-                })
-                return {"pages": result}
-            else:
-                result = await extract_text_and_boxes(full_path)
-                return { "pages": [{ "page": 1, "results": result.results }] }
-        else:
-            result = await extract_text_and_boxes(full_path)
-            return { "pages": [{ "page": 1, "results": result.results }] }
-    
-    # Neither file nor path provided
-    else:
+    if content_type not in allowed_types:
         raise HTTPException(
             status_code=400,
-            detail="Either file upload or JSON path must be provided"
+            detail=f"Invalid file type. Supported: {', '.join(allowed_types)}"
         )
 
-# Alternative endpoint that accepts form data with file path
+    return await extract_text_and_boxes(file)
+
+
+# OCR from saved file path (e.g., after /upload)
 @router.post("/ocr/path", response_model=OCRResponse)
-async def ocr_extract_path(
-    path: str = Form(...)
-):
+async def ocr_from_path(request: OCRRequest):
     """
-    Extract text and bounding boxes using a path to an existing file.
+    Perform OCR using a path to a previously uploaded file.
+    Supports PDFs (multi-page) and images.
     """
-    # Construct the full path to the file
-    filename = os.path.basename(path)
-    full_path = os.path.join("uploads", filename)
-    
-    if not os.path.exists(full_path):
-        raise HTTPException(
-            status_code=404,
-            detail=f"File not found: {filename}"
-        )
-    
-    # Process the file
-    result = await extract_text_and_boxes(full_path)
-    return result
+    try:
+        full_path = request.path 
+        filename = os.path.basename(full_path)
+
+        print(f"[OCR PATH] Attempting to read file at: {full_path}")
+
+        if not os.path.exists(full_path):
+            raise HTTPException(status_code=404, detail=f"File not found: {filename}")
+
+        # Handle PDF (convert pages first)
+        if filename.lower().endswith(".pdf"):
+            image_paths = convert_pdf_to_images(full_path)
+            results = []
+            for i, image_path in enumerate(image_paths):
+                page_result = await extract_text_and_boxes(image_path)
+                results.append(page_result.pages[0])  # Assumes 1 page per image
+            return OCRResponse(pages=results)
+
+        # Image case
+        return await extract_text_and_boxes(full_path)
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))

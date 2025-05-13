@@ -11,9 +11,15 @@ class OCRRequest(BaseModel):
     path: str
 
 class OCRResult(BaseModel):
+    line_id: str
     text: str
-    bbox: List[float]  # e.g., [x1, y1, x2, y2]
     confidence: float
+    bbox_raw: List[List[float]]
+    bbox_norm: List[float]
+    low_confidence: bool
+    line_class: Optional[str]
+    page: int
+
 
 class OCRPageResult(BaseModel):
     page: int
