@@ -44,6 +44,7 @@ class MarkdownProcessor:
         
         # If no API key, just return the raw text
         if not self.api_key:
+            print("No API key provided, returning raw text")
             return raw_text
 
         # Load the prompt from the file
@@ -57,6 +58,10 @@ class MarkdownProcessor:
                 
         # Use OpenAI to convert to markdown
         try:
+            print("Sending request to OpenAI")
+            print("Prompt:\n", system_prompt[0:100])
+            print("Raw text:\n", raw_text[0:300])
+
             response = requests.post(
                 "https://api.openai.com/v1/chat/completions",
                 headers={
@@ -75,9 +80,13 @@ class MarkdownProcessor:
                             "content": f"Convert this OCR text to well-formatted Markdown:\n\n{raw_text}"
                         }
                     ],
-                    "temperature": 0.3
+                    "temperature": 0.2
                 }
             )
+
+
+            print("Status code:", response.status_code)
+            print("Response content (truncated):", response.text[:500])
             
             response_data = response.json()
             if "choices" in response_data and len(response_data["choices"]) > 0:

@@ -3,6 +3,8 @@ from fastapi import FastAPI # type: ignore
 from fastapi.middleware.cors import CORSMiddleware # type: ignore
 from fastapi.staticfiles import StaticFiles # type: ignore
 import os
+from dotenv import load_dotenv  
+load_dotenv()
 
 from routes import upload, parse
 
@@ -40,5 +42,5 @@ async def root():
     return {"message": "Welcome to Leviosa AI API"}
 
 if __name__ == "__main__":
-    import uvicorn
+    import uvicorn # type: ignore
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
