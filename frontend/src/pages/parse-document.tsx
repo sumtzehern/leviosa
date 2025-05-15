@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/layout";
@@ -11,6 +12,8 @@ import {
 } from "@/components/ui/resizable";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import useResizeObserver from "use-resize-observer";
+import { ProgressTracker, ProcessingStage } from "@/components/progress-tracker";
+import { DownloadButtonGroup } from "@/components/download-button-group";
 
 // Initialize PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -22,7 +25,11 @@ export default function ParseDocumentPage() {
   const { toast } = useToast();
   const [isParsing, setIsParsing] = useState(false);
   const [markdownContent, setMarkdownContent] = useState<string>("");
+  const [rawTextContent, setRawTextContent] = useState<string>("");
+  const [layoutData, setLayoutData] = useState<object | null>(null);
   const [numPages, setNumPages] = useState<number>(0);
+  const [currentStage, setCurrentStage] = useState<ProcessingStage>("uploading");
+  const [completedStages, setCompletedStages] = useState<ProcessingStage[]>([]);
   const { ref: containerRef, width: containerWidth = 800 } =
     useResizeObserver<HTMLDivElement>();
 
@@ -38,10 +45,26 @@ export default function ParseDocumentPage() {
     });
   };
 
+  const updateStage = (stage: ProcessingStage) => {
+    setCurrentStage(stage);
+    
+    // Update completed stages
+    if (stage === "done") {
+      setCompletedStages(["uploading", "parsing", "refining", "done"]);
+    } else {
+      const stageIndex = ["uploading", "parsing", "refining", "done"].indexOf(stage);
+      const previousStages = ["uploading", "parsing", "refining", "done"].slice(0, stageIndex) as ProcessingStage[];
+      setCompletedStages(previousStages);
+    }
+  };
+
   const handleFileUpload = async (file: File) => {
     setIsUploading(true);
     setIsParsing(true);
     setMarkdownContent("");
+    setRawTextContent("");
+    setLayoutData(null);
+    updateStage("uploading");
 
     // Show loading toast
     const loadingToast = toast({
@@ -81,6 +104,7 @@ export default function ParseDocumentPage() {
 
       const data = await uploadResponse.json();
       setPdfPath(data.path);
+      updateStage("parsing");
 
       // Update loading toast
       toast({
@@ -103,6 +127,8 @@ export default function ParseDocumentPage() {
         throw new Error("Layout analysis failed");
       }
 
+      updateStage("refining");
+      
       // Update loading toast
       toast({
         title: "Refining markdown output",
@@ -111,6 +137,10 @@ export default function ParseDocumentPage() {
       });
 
       const enhancedData = await enhancedResponse.json();
+      setRawTextContent(enhancedData.raw_text || "");
+      
+      // Store layout data for potential download
+      setLayoutData(enhancedData.layout_data || {});
 
       // Refine the markdown for better display
       const refinedResponse = await fetch("/api/markdown/refine", {
@@ -130,6 +160,8 @@ export default function ParseDocumentPage() {
         setMarkdownContent(refinedData.markdown);
       }
 
+      updateStage("done");
+      
       // Success toast
       toast({
         title: "Processing complete",
@@ -179,6 +211,11 @@ export default function ParseDocumentPage() {
         </div>
       ) : (
         <div className="mt-8 glass-card h-[80vh] flex flex-col">
+          <ProgressTracker 
+            currentStage={currentStage}
+            completedStages={completedStages}
+          />
+          
           <ResizablePanelGroup
             direction="horizontal"
             className="resizable-panel-container flex-1 h-full"
@@ -230,6 +267,15 @@ export default function ParseDocumentPage() {
               className="flex flex-col h-full"
             >
               <div className="h-full p-4 overflow-auto flex-1 flex flex-col">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-medium">Extracted Content</h3>
+                  <DownloadButtonGroup 
+                    markdown={markdownContent}
+                    rawText={rawTextContent}
+                    layoutData={layoutData}
+                    isDisabled={currentStage !== "done"}
+                  />
+                </div>
                 <div className="rounded-md border p-4 bg-background min-h-[200px] h-full overflow-auto">
                   {isParsing ? (
                     <div className="flex flex-col items-center justify-center h-full">
