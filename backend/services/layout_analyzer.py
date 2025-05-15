@@ -34,7 +34,7 @@ async def analyze_layout(
     before performing OCR
     """
     if isinstance(input_file, str) and input_file.lower().endswith(".pdf"):
-        from backend.services.pdf_to_image import convert_pdf_to_images
+        from services.pdf_to_image import convert_pdf_to_images
         image_paths = convert_pdf_to_images(input_file)[:3]  # Limit to 3 pages
         pages = [await _process_layout_from_path(p, i + 1) for i, p in enumerate(image_paths)]
         return LayoutAnalysisResponse(pages=pages)

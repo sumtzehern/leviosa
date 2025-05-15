@@ -3,36 +3,28 @@ import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/layout";
 import { TopBar } from "@/components/top-bar";
 import { FileDropzone } from "@/components/file-dropzone";
-import { PdfWithOverlay } from "@/components/PdfWithOverlay";
+import { Document, Page, pdfjs } from "react-pdf";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { OcrOverlay, OCRPageResult } from "@/components/OcrOverlay";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import useResizeObserver from "use-resize-observer";
+
+// Initialize PDF.js worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 export default function ParseDocumentPage() {
   const [pdfPath, setPdfPath] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const [ocrResults, setOcrResults] = useState<OCRPageResult[] | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [isParsing, setIsParsing] = useState(false);
-
-  useEffect(() => {
-    if (pdfPath && containerRef.current) {
-      const resizeObserver = new ResizeObserver(() => {
-        const { offsetWidth, offsetHeight } = containerRef.current!;
-        setContainerSize({ width: offsetWidth, height: offsetHeight });
-      });
-  
-      resizeObserver.observe(containerRef.current);
-      return () => resizeObserver.disconnect();
-    }
-  }, [pdfPath]);
-  
+  const [markdownContent, setMarkdownContent] = useState<string>("");
+  const [numPages, setNumPages] = useState<number>(0);
+  const { ref: containerRef, width: containerWidth = 800 } =
+    useResizeObserver<HTMLDivElement>();
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -46,96 +38,119 @@ export default function ParseDocumentPage() {
     });
   };
 
-  // const handleFileUpload = async (file: File) => {
-  //   setIsUploading(true);
-  //   setIsParsing(true);
-  //   try {
-  //     console.log("Uploading file:", file);
-      
-  //     if (!file.name.endsWith(".pdf")) {
-  //       toast({
-  //         title: "Unsupported file type",
-  //         description: "Please upload a PDF document.",
-  //         variant: "destructive",
-  //       });
-  //       return;
-  //     }
-
-      
-  //     //upload file to backend
-  //     const formData = new FormData();
-  //     formData.append("file", file);
-
-  //     const uploadResponse = await fetch("/api/upload", {
-  //       method: "POST",
-  //       body: formData,
-  //     });
-
-  //     if (!uploadResponse.ok) {
-  //       throw new Error("Upload failed");
-  //     }
-
-  //     const data = await uploadResponse.json();
-  //     setPdfPath(data.path)
-
-  //     // OCR request
-  //     const ocrResponse = await fetch("/api/ocr/path", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({ path: data.path }),
-  //     });
-  //     console.log("OCR Response:", ocrResponse);
-
-  //     if (!ocrResponse.ok) {
-  //       throw new Error("OCR request failed");
-  //     }
-      
-
-  //     const ocrData = await ocrResponse.json();
-  //     console.log("OCR Response:", ocrData);
-
-  //     setOcrResults(ocrData.pages);
-  //     setIsParsing(false);
-  //     toast({
-  //       title: "File uploaded",
-  //       description: `${file.name} uploaded successfully.`,
-  //     });
-  //   } catch (error) {
-  //     toast({
-  //       title: "Upload failed",
-  //       description: "There was an error uploading your file",
-  //       variant: "destructive",
-  //     });
-  //   } finally {
-  //     setIsUploading(false);
-  //   }
-  // };
   const handleFileUpload = async (file: File) => {
     setIsUploading(true);
     setIsParsing(true);
+    setMarkdownContent("");
+
+    // Show loading toast
+    const loadingToast = toast({
+      title: "Processing document",
+      description: "Analyzing layout and extracting content...",
+      duration: 100000, // Long duration, we'll dismiss it manually
+    });
+
     try {
-      // Instead of uploading, just use the static PDF
-      setPdfPath('/sample.pdf');
-      // Optionally, mock OCR results if needed for overlay
-      setOcrResults([
-        {
-          page: 1,
-          results: [],
-        },
-      ]);
-      setIsParsing(false);
+      console.log("Uploading file:", file);
+
+      if (
+        !file.name.endsWith(".pdf") &&
+        !file.name.endsWith(".png") &&
+        !file.name.endsWith(".jpg")
+      ) {
+        toast({
+          title: "Unsupported file type",
+          description: "Please upload a PDF or image document.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Upload file to backend
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const uploadResponse = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await uploadResponse.json();
+      setPdfPath(data.path);
+
+      // Update loading toast
       toast({
-        title: "File loaded (mocked)",
-        description: `${file.name} loaded successfully (mocked).`,
+        id: loadingToast.id,
+        title: "Analyzing document layout",
+        description: "Detecting regions and structure...",
+        duration: 100000,
+      });
+
+      // Enhanced layout analysis with direct markdown conversion
+      const enhancedResponse = await fetch(
+        "/api/layout/enhanced/markdown/direct/multipage",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: data.path }),
+        }
+      );
+
+      if (!enhancedResponse.ok) {
+        throw new Error("Layout analysis failed");
+      }
+
+      // Update loading toast
+      toast({
+        id: loadingToast.id,
+        title: "Refining markdown output",
+        description: "Cleaning and formatting the extracted content...",
+        duration: 100000,
+      });
+
+      const enhancedData = await enhancedResponse.json();
+
+      // Refine the markdown for better display
+      const refinedResponse = await fetch("/api/markdown/refine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          markdown: enhancedData.markdown,
+          raw_text: enhancedData.raw_text,
+        }),
+      });
+
+      if (!refinedResponse.ok) {
+        // If refinement fails, still use the original markdown
+        setMarkdownContent(enhancedData.markdown);
+      } else {
+        const refinedData = await refinedResponse.json();
+        setMarkdownContent(refinedData.markdown);
+      }
+
+      // Success toast
+      toast({
+        id: loadingToast.id,
+        title: "Processing complete",
+        description: `${file.name} analyzed successfully.`,
+        duration: 3000,
       });
     } catch (error) {
+      console.error("Error:", error);
       toast({
-        title: "Load failed",
-        description: "There was an error loading your file",
+        id: loadingToast.id,
+        title: "Processing failed",
+        description: "There was an error processing your document.",
         variant: "destructive",
+        duration: 3000,
       });
     } finally {
       setIsUploading(false);
+      setIsParsing(false);
     }
   };
 
@@ -146,7 +161,7 @@ export default function ParseDocumentPage() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf,.png"
+        accept=".pdf"
         className="hidden"
         onChange={(e) => {
           const files = e.target.files;
@@ -172,15 +187,38 @@ export default function ParseDocumentPage() {
             direction="horizontal"
             className="resizable-panel-container flex-1 h-full"
           >
-            <ResizablePanel defaultSize={50} minSize={30} className="flex flex-col h-full">
+            <ResizablePanel
+              defaultSize={50}
+              minSize={30}
+              className="flex flex-col h-full"
+            >
               <div className="h-full p-4 flex-1 flex flex-col">
-                <div ref={containerRef} className="relative w-full h-full flex-1">
-                  {pdfPath && ocrResults && (
-                    <PdfWithOverlay
-                      fileUrl={pdfPath}
-                      ocrResults={ocrResults}
-                      isLoading={isParsing}
-                    />
+                <div
+                  ref={containerRef}
+                  className="relative w-full h-full flex-1 overflow-auto"
+                >
+                  {isParsing ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-20">
+                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                    </div>
+                  ) : null}
+
+                  {pdfPath ? (
+                    <Document
+                      file={pdfPath}
+                      loading={<p>Loading PDF…</p>}
+                      onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+                    >
+                      {Array.from({ length: numPages }, (_, i) => (
+                        <Page
+                          key={i}
+                          pageNumber={i + 1}
+                          width={containerWidth}
+                        />
+                      ))}
+                    </Document>
+                  ) : (
+                    <FileDropzone onFileUpload={handleFileUpload} />
                   )}
                 </div>
               </div>
@@ -188,13 +226,27 @@ export default function ParseDocumentPage() {
 
             <ResizableHandle withHandle />
 
-            <ResizablePanel defaultSize={50} minSize={30} className="flex flex-col h-full">
+            <ResizablePanel
+              defaultSize={50}
+              minSize={30}
+              className="flex flex-col h-full"
+            >
               <div className="h-full p-4 overflow-auto flex-1 flex flex-col">
-                <h2 className="text-xl font-semibold mb-4">Extracted Text</h2>
-                <div className="rounded-md border p-4 bg-muted/30 min-h-[200px] h-full">
-                  <p className="text-muted-foreground text-sm">
-                    Document text extraction will appear here.
-                  </p>
+                <div className="rounded-md border p-4 bg-background min-h-[200px] h-full overflow-auto">
+                  {isParsing ? (
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary mb-4"></div>
+                      <p className="text-muted-foreground">
+                        Processing document...
+                      </p>
+                    </div>
+                  ) : markdownContent ? (
+                    <MarkdownRenderer content={markdownContent} />
+                  ) : (
+                    <p className="text-muted-foreground text-sm">
+                      Document content will appear here after processing.
+                    </p>
+                  )}
                 </div>
               </div>
             </ResizablePanel>

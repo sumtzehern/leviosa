@@ -1,4 +1,3 @@
-
 from routes import ocr_routes
 from fastapi.middleware.cors import CORSMiddleware # type: ignore
 from fastapi.staticfiles import StaticFiles # type: ignore
