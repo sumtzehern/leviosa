@@ -1,12 +1,14 @@
 
 from routes import ocr_routes
-from fastapi import FastAPI # type: ignore
 from fastapi.middleware.cors import CORSMiddleware # type: ignore
 from fastapi.staticfiles import StaticFiles # type: ignore
 import os
-from dotenv import load_dotenv  
-load_dotenv()
+from dotenv import load_dotenv   # type: ignore
 
+load_dotenv()
+print(f"OPENAI_API_KEY loaded: {'OPENAI_API_KEY' in os.environ}")
+
+from fastapi import FastAPI # type: ignore
 from routes import upload
 
 # Create uploads directory if it doesn't exist
