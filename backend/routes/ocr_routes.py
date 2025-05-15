@@ -359,7 +359,8 @@ async def direct_layout_to_markdown(request: OCRRequest):
         
         return MarkdownResponse(
             markdown=markdown,
-            raw_text=raw_text
+            raw_text=raw_text,
+            layout_data=layout_json
         )
         
     except Exception as e:

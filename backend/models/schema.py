@@ -50,3 +50,4 @@ class MarkdownResponse(BaseModel):
     """Response model for markdown conversion"""
     markdown: str
     raw_text: str
+    layout_data: Optional[Dict[str, Any]] = None

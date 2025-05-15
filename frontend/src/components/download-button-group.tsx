@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DownloadIcon } from "lucide-react";
@@ -14,6 +13,7 @@ interface DownloadButtonGroupProps {
   rawText?: string;
   layoutData?: object;
   isDisabled?: boolean;
+  path?: string;
 }
 
 export function DownloadButtonGroup({
@@ -21,6 +21,7 @@ export function DownloadButtonGroup({
   rawText,
   layoutData,
   isDisabled = false,
+  path,
 }: DownloadButtonGroupProps) {
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -43,6 +44,25 @@ export function DownloadButtonGroup({
     }
   };
 
+  // Disabled layout JSON download for now
+  // const handleLayoutDownload = async () => {
+  //   try {
+  //     setIsDownloading(true);
+  //     if (layoutData) {
+  //       downloadFile(
+  //         JSON.stringify(layoutData, null, 2),
+  //         "layout-data.json",
+  //         "application/json"
+  //       );
+  //     }
+  //   } catch (err) {
+  //     console.error("Download failed:", err);
+  //     alert("Failed to download layout JSON.");
+  //   } finally {
+  //     setIsDownloading(false);
+  //   }
+  // };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -62,29 +82,27 @@ export function DownloadButtonGroup({
       <DropdownMenuContent align="end">
         <DropdownMenuItem
           disabled={!markdown}
-          onClick={() => markdown && downloadFile(markdown, "document.md", "text/markdown")}
+          onClick={() =>
+            markdown &&
+            downloadFile(markdown, "document.md", "text/markdown")
+          }
         >
-          Download as Markdown (.md)
+          Markdown (.md)
         </DropdownMenuItem>
         <DropdownMenuItem
           disabled={!rawText}
-          onClick={() => rawText && downloadFile(rawText, "raw-text.txt", "text/plain")}
-        >
-          Download Raw Text (.txt)
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          disabled={!layoutData}
-          onClick={() => 
-            layoutData && 
-            downloadFile(
-              JSON.stringify(layoutData, null, 2),
-              "layout-data.json",
-              "application/json"
-            )
+          onClick={() =>
+            rawText && downloadFile(rawText, "raw-text.txt", "text/plain")
           }
         >
-          Download Layout Data (.json)
+          Raw Text (.txt)
         </DropdownMenuItem>
+        {/* <DropdownMenuItem
+          disabled={!layoutData}
+          onClick={handleLayoutDownload}
+        >
+          Download Layout JSON (.json)
+        </DropdownMenuItem> */}
       </DropdownMenuContent>
     </DropdownMenu>
   );
