@@ -7,6 +7,7 @@ from services.layout_postprocessor import LayoutPostprocessor
 from services.pdf_to_image import convert_pdf_to_images
 from services.markdown_processor import MarkdownProcessor
 import os
+from typing import Dict, Any
 
 router = APIRouter()
 markdown_processor = MarkdownProcessor()
@@ -162,12 +163,14 @@ async def enhanced_layout_from_upload(file: UploadFile = File(...)):
     # First perform basic layout analysis
     layout_result = await analyze_layout(file)
     
-    # Then enhance region classifications
-    enhanced_result = LayoutAnalysisResponse(
-        pages=layout_postprocessor.process_regions(layout_result.pages)
-    )
+    # Convert Pydantic models to dictionaries for postprocessing
+    pages_dict = [page.dict() for page in layout_result.pages]
     
-    return enhanced_result
+    # Apply enhancement
+    enhanced_pages = layout_postprocessor.process_regions(pages_dict)
+    
+    # Return as Pydantic response model
+    return LayoutAnalysisResponse(pages=enhanced_pages)
 
 @router.post("/layout/path/enhanced", response_model=LayoutAnalysisResponse)
 async def enhanced_layout_from_path(request: OCRRequest):

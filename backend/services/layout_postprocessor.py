@@ -12,7 +12,7 @@ class LayoutPostprocessor:
         self.figure_patterns = re.compile(r'fig\.?|figure|diagram|plot|image|graph', re.IGNORECASE)
         self.table_patterns = re.compile(r'table|tabular|\|\s+\||\+\-+\+', re.IGNORECASE)
         self.list_patterns = re.compile(r'^(\d+\.|•|\*|\-)\s', re.MULTILINE)
-        self.equation_patterns = re.compile(r'equation|=|\+|\-|\*|\/|\sum|\int|\prod|\div|\approx', re.IGNORECASE)
+        self.equation_patterns = re.compile(r'equation|=|\+|\-|\*|\/|\\sum|\\int|\\prod|\\div|\\approx', re.IGNORECASE)
         self.title_patterns = re.compile(r'^[A-Z0-9][\w\s\.\:]{0,100}$', re.MULTILINE)
         
     def process_regions(self, pages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -30,14 +30,22 @@ class LayoutPostprocessor:
         for page in pages:
             enhanced_results = []
             
-            for region in page.get("results", []):
+            # Check if the page has a results attribute
+            if hasattr(page, "results"):
+                regions = page.results
+                page_num = page.page
+            else:
+                regions = page.get("results", [])
+                page_num = page.get("page", 1)
+            
+            for region in regions:
                 # Apply enhancements to each region
                 enhanced_region = self._enhance_region(region)
                 enhanced_results.append(enhanced_region)
             
             # Create a new page dict with enhanced results
             enhanced_page = {
-                "page": page.get("page", 1),
+                "page": page_num,
                 "results": enhanced_results
             }
             enhanced_pages.append(enhanced_page)
@@ -54,14 +62,27 @@ class LayoutPostprocessor:
         Returns:
             An enhanced copy of the region dictionary
         """
-        # Create a copy of the region to avoid modifying the original
-        enhanced_region = region.copy()
-        
+        # Convert region to dict if it's a Pydantic model
+        if hasattr(region, "dict"):
+            enhanced_region = region.dict()
+        else:
+            enhanced_region = region.copy()
+            
         # Get the text content if available
-        text = region.get("content", {}).get("text", "")
+        if hasattr(region, "content") and hasattr(region.content, "get"):
+            text = region.content.get("text", "")
+        elif hasattr(region, "content") and hasattr(region.content, "text"):
+            text = region.content.text
+        else:
+            text = enhanced_region.get("content", {}).get("text", "")
         
+        if hasattr(region, "region_type"):
+            region_type = region.region_type
+        else:
+            region_type = enhanced_region.get("region_type", "")
+            
         # Skip empty regions or already specific classifications
-        if not text or region.get("region_type") not in ["text", "unknown"]:
+        if not text or region_type not in ["text", "unknown"]:
             return enhanced_region
         
         # Check for potential figures
@@ -104,7 +125,12 @@ class LayoutPostprocessor:
             return True
         
         # Check if the region is likely a figure based on shape
-        bbox = region.get("bbox_raw", [])
+        # Handle both dict and Pydantic model
+        if hasattr(region, "bbox_raw"):
+            bbox = region.bbox_raw
+        else:
+            bbox = region.get("bbox_raw", [])
+        
         if len(bbox) == 4:
             width = bbox[2] - bbox[0]
             height = bbox[3] - bbox[1]
