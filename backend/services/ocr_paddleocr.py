@@ -8,9 +8,12 @@ from fastapi import UploadFile
 import asyncio
 
 from models.schema import OCRResponse, OCRResult, OCRPageResult
-from services.pdf_converter import convert_pdf_to_images
+from services.pdf_to_image import convert_pdf_to_images
 from paddleocr import PaddleOCR
 
+'''
+In this file, we use PaddleOCR to extract text and bounding boxes from images.
+'''
 # Initialize PaddleOCR (lightweight EN version, CPU)
 ocr_engine = PaddleOCR(
     use_angle_cls=True,

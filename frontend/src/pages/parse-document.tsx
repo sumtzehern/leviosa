@@ -146,7 +146,7 @@ export default function ParseDocumentPage() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf"
+        accept=".pdf,.png"
         className="hidden"
         onChange={(e) => {
           const files = e.target.files;

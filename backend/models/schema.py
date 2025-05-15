@@ -6,6 +6,21 @@ class UploadResponse(BaseModel):
     filename: str
     path: str
 
+class LayoutResult(BaseModel):
+    region_id: str
+    region_type: str  # "text", "table", "figure", etc.
+    bbox_raw: List[float]
+    bbox_norm: List[float]
+    content: Dict[str, Any]
+    page: int
+
+class LayoutPageResult(BaseModel):
+    page: int
+    results: List[LayoutResult]
+
+class LayoutAnalysisResponse(BaseModel):
+    pages: List[LayoutPageResult]
+
 class OCRRequest(BaseModel):
     path: str
 

@@ -1,4 +1,5 @@
 
+from routes import ocr_routes
 from fastapi import FastAPI # type: ignore
 from fastapi.middleware.cors import CORSMiddleware # type: ignore
 from fastapi.staticfiles import StaticFiles # type: ignore
@@ -6,7 +7,7 @@ import os
 from dotenv import load_dotenv  
 load_dotenv()
 
-from routes import upload, parse
+from routes import upload
 
 # Create uploads directory if it doesn't exist
 os.makedirs("uploads", exist_ok=True)
@@ -35,7 +36,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Include routers
 app.include_router(upload.router, prefix="/api", tags=["Upload"])
-app.include_router(parse.router, prefix="/api", tags=["Parse"])
+app.include_router(ocr_routes.router, prefix="/api", tags=["Parse"])
 
 @app.get("/")
 async def root():

@@ -1,0 +1,8 @@
+text
+title
+table
+figure
+header
+footer
+list
+equation

@@ -11,3 +11,4 @@ paddleocr>=2.7.0
 paddlehub>=2.7.0
 paddlepaddle>=2.7.0
 requests>=2.31.0
+paddleocr[structure]>=2.6.0.3
