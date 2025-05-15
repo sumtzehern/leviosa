@@ -84,7 +84,6 @@ export default function ParseDocumentPage() {
 
       // Update loading toast
       toast({
-        id: loadingToast.id,
         title: "Analyzing document layout",
         description: "Detecting regions and structure...",
         duration: 100000,
@@ -106,7 +105,6 @@ export default function ParseDocumentPage() {
 
       // Update loading toast
       toast({
-        id: loadingToast.id,
         title: "Refining markdown output",
         description: "Cleaning and formatting the extracted content...",
         duration: 100000,
@@ -134,7 +132,6 @@ export default function ParseDocumentPage() {
 
       // Success toast
       toast({
-        id: loadingToast.id,
         title: "Processing complete",
         description: `${file.name} analyzed successfully.`,
         duration: 3000,
@@ -142,7 +139,6 @@ export default function ParseDocumentPage() {
     } catch (error) {
       console.error("Error:", error);
       toast({
-        id: loadingToast.id,
         title: "Processing failed",
         description: "There was an error processing your document.",
         variant: "destructive",
@@ -214,6 +210,8 @@ export default function ParseDocumentPage() {
                           key={i}
                           pageNumber={i + 1}
                           width={containerWidth}
+                          renderAnnotationLayer={false}
+                          renderTextLayer={false}
                         />
                       ))}
                     </Document>
