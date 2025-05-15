@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles # type: ignore
 import os
 from dotenv import load_dotenv   # type: ignore
 
-load_dotenv()
+load_dotenv(override=True)
 print(f"OPENAI_API_KEY loaded: {'OPENAI_API_KEY' in os.environ}")
 
 from fastapi import FastAPI # type: ignore

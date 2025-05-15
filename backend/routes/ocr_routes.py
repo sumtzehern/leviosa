@@ -409,48 +409,24 @@ async def direct_multipage_layout_to_markdown(request: OCRRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/layout/enhanced/markdown/direct/multipage/refined", response_model=MarkdownResponse)
-async def refined_multipage_layout_to_markdown(request: OCRRequest):
+@router.post("/markdown/refine", response_model=MarkdownResponse)
+async def refine_existing_markdown(request: MarkdownResponse):
     """
-    Process the document with a two-stage approach: 
-    1. Convert layout-enhanced analysis from all pages to markdown
-    2. Refine the markdown with an additional LLM pass for cleaner output
+    Takes existing markdown (typically from layout analysis) and performs a second refinement pass.
+    This improves formatting, fixes OCR errors, and creates display-ready markdown.
     
-    This produces high-quality, display-ready markdown with consistent formatting.
+    Input should be a MarkdownResponse object with the 'markdown' field containing the content to refine.
     """
     try:
-        filename = os.path.basename(request.path)
-        full_path = os.path.join("uploads", filename)
-
-        if not os.path.exists(full_path):
-            raise HTTPException(status_code=404, detail=f"File not found: {filename}")
-
-        # Perform layout analysis with enhancement
-        layout_result = await analyze_layout(full_path)
-        
-        # Convert Pydantic models to dictionaries for postprocessing
-        pages_dict = [page.dict() for page in layout_result.pages]
-        
-        # Apply enhancement
-        enhanced_pages = layout_postprocessor.process_regions(pages_dict)
-        enhanced_result = LayoutAnalysisResponse(pages=enhanced_pages)
-        
-        # Process all pages, not just the first one
-        raw_markdown = await markdown_processor.convert_layout_json_to_markdown(enhanced_result)
-        
-        # Second pass: refine the markdown
-        refined_markdown = markdown_refiner.refine_markdown(raw_markdown)
-        
-        # Get raw text for backward compatibility
-        raw_text = ""
-        for page in enhanced_result.pages:
-            for region in page.results:
-                if "text" in region.content:
-                    raw_text += region.content["text"] + "\n"
+        if not request.markdown:
+            raise HTTPException(status_code=400, detail="No markdown content provided for refinement")
+            
+        # Run the refinement process on the existing markdown
+        refined_markdown = markdown_refiner.refine_markdown(request.markdown)
         
         return MarkdownResponse(
             markdown=refined_markdown,
-            raw_text=raw_text
+            raw_text=request.raw_text
         )
         
     except Exception as e:
