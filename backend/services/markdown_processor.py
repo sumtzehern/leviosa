@@ -15,7 +15,7 @@ class MarkdownProcessor:
         """Initialize with optional API key for LLM service"""
         self.api_key = llm_api_key or os.environ.get("OPENAI_API_KEY")
     
-    async def convert_layout_json_to_markdown(self, layout_result: LayoutAnalysisResponse) -> str:
+    async def convert_layout_json_to_markdown(self, layout_result: LayoutAnalysisResponse, prompt: Optional[str] = None) -> str:
         """
         Converts layout-aware OCR JSON directly into Markdown using LLM.
         Processes all pages, not just the first one.
@@ -71,7 +71,11 @@ class MarkdownProcessor:
                         },
                         {
                             "role": "user",
-                            "content": f"Convert the following multi-page document layout into clean Markdown:\n\n{json.dumps(structured_document, indent=2)}"
+                            "content": (
+                                (f"{prompt.strip()}\n\n" if prompt else "") +
+                                "Convert the following multi-page document layout into clean Markdown:\n\n" +
+                                json.dumps(structured_document, indent=2)
+                            )
                         }
                     ],
                     "temperature": 0.2

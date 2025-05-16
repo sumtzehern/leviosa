@@ -17,6 +17,7 @@ import {
 } from "@/components/progress-tracker";
 import { DownloadButtonGroup } from "@/components/download-button-group";
 import { cn } from "@/lib/utils";
+import { PromptConfigModal } from "@/components/PromptConfigModal";
 
 // Initialize PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -37,16 +38,15 @@ export default function ParseDocumentPage() {
   const { ref: containerRef, width: containerWidth = 800 } =
     useResizeObserver<HTMLDivElement>();
 
+  const [promptConfigOpen, setPromptConfigOpen] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState("");
+
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
   const handleConfigureClick = () => {
-    toast({
-      title: "Configure Options",
-      description:
-        "Configuration panel will be implemented in a future version.",
-    });
+    setPromptConfigOpen(true);
   };
 
   const updateStage = (stage: ProcessingStage) => {
@@ -314,6 +314,12 @@ export default function ParseDocumentPage() {
           </ResizablePanelGroup>
         </div>
       )}
+      <PromptConfigModal
+        open={promptConfigOpen}
+        onClose={() => setPromptConfigOpen(false)}
+        prompt={customPrompt}
+        setPrompt={setCustomPrompt}
+      />
     </Layout>
   );
 }

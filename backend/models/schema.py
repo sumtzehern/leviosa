@@ -23,6 +23,7 @@ class LayoutAnalysisResponse(BaseModel):
 
 class OCRRequest(BaseModel):
     path: str
+    prompt: Optional[str] = None
 
 class OCRResult(BaseModel):
     line_id: str

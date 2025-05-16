@@ -347,8 +347,8 @@ async def direct_layout_to_markdown(request: OCRRequest):
         # Convert enhanced result to dictionary for direct processing
         layout_json = enhanced_result.dict()
         
-        # Convert to markdown directly using the existing prompt
-        markdown = await markdown_processor.direct_layout_to_markdown(layout_json)
+        # Convert to markdown directly using the existing prompt or user-provided prompt
+        markdown = await markdown_processor.direct_layout_to_markdown(layout_json, prompt=request.prompt)
         
         # Get raw text for backward compatibility
         raw_text = ""
